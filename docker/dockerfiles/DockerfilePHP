@@ -1,0 +1,31 @@
+FROM php:8.2-apache
+COPY --from=composer:2.2 /usr/bin/composer /usr/local/bin/composer
+RUN apt-get update && apt-get install -y \
+    zip \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev
+
+RUN apt update && \
+     apt install -y \
+         libzip-dev \
+         && docker-php-ext-install zip pdo pdo_mysql mbstring  bcmath gd mysqli
+
+COPY ./docker/apache/dev-site.conf /etc/apache2/sites-available/
+RUN a2dissite 000-default && a2ensite dev-site.conf
+RUN a2enmod rewrite && service apache2 restart
+
+ENV TZ=Asia/Kolkata
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENV PHP_MEMORY_LIMIT=1024M
+ENV memory_limit=1024M
+ENV post_max_size=512M 
+ENV upload_max_filesize=1000M
+# Enable headers module
+RUN a2enmod rewrite headers
+RUN apt auto-remove -y
+RUN service apache2 restart
+#COPY env.example /routes/
+
